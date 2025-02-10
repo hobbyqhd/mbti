@@ -1,0 +1,23 @@
+{
+  "name": "mbti-test",
+  "version": "1.0.0",
+  "description": "MBTI性格测试系统",
+  "scripts": {
+    "dev:h5": "uni -p h5",
+    "dev:app": "uni -p app",
+    "build:h5": "uni build -p h5",
+    "build:app": "uni build -p app"
+  },
+  "dependencies": {
+    "@dcloudio/uni-app": "^2.0.2",
+    "@dcloudio/uni-h5": "^2.0.2",
+    "@dcloudio/uni-ui": "^1.4.28",
+    "vue": "^2.6.11",
+    "vuex": "^3.6.2"
+  },
+  "devDependencies": {
+    "@dcloudio/uni-cli-shared": "^2.0.2",
+    "@dcloudio/vue-cli-plugin-uni": "^2.0.2",
+    "@vue/cli-service": "^4.5.13"
+  }
+}
