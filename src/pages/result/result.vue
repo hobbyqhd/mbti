@@ -50,46 +50,18 @@ export default {
     }
   },
   methods: {
-    async fetchResult(id) {
-      try {
-        const response = await uni.request({
-          url: `http://localhost:8081/api/results/${id}`,
-          method: 'GET'
-        });
-        if (response.statusCode === 200) {
-          this.result = response.data;
-        } else {
-          uni.showToast({
-            title: '获取结果失败',
-            icon: 'none'
-          });
-        }
-      } catch (error) {
-        uni.showToast({
-          title: '网络错误',
-          icon: 'none'
-        });
-      }
-    },
     shareResult() {
       uni.share({
-        provider: 'weixin',
-        scene: 'WXSceneSession',
+        provider: "weixin",
+        scene: "WXSceneSession",
         type: 0,
-        title: 'MBTI性格测试结果',
-        summary: `我的MBTI类型是${this.result.type}，快来测测你的类型吧！`,
-        imageUrl: '/static/share-image.png',
-        success: function () {
-          uni.showToast({
-            title: '分享成功',
-            icon: 'success'
-          });
+        title: `我的MBTI性格类型是${this.result.type}`,
+        summary: this.result.report,
+        success: function (res) {
+          console.log("success:" + JSON.stringify(res));
         },
-        fail: function () {
-          uni.showToast({
-            title: '分享失败',
-            icon: 'none'
-          });
+        fail: function (err) {
+          console.log("fail:" + JSON.stringify(err));
         }
       });
     }
@@ -99,95 +71,113 @@ export default {
 
 <style>
 .result-container {
-  padding: 20px;
-  background-color: #f5f5f5;
+  padding: 30rpx;
   min-height: 100vh;
+  background-color: #f5f7fa;
 }
 
 .result-card {
-  background-color: #fff;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: #ffffff;
+  border-radius: 20rpx;
+  padding: 40rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+  margin-bottom: 30rpx;
+  animation: slideIn 0.5s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(30rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .result-header {
   text-align: center;
-  margin-bottom: 30px;
+  margin-bottom: 50rpx;
 }
 
 .result-title {
-  font-size: 18px;
+  font-size: 32rpx;
   color: #666;
-  margin-bottom: 10px;
+  margin-bottom: 20rpx;
+  display: block;
 }
 
 .result-type {
-  font-size: 36px;
+  font-size: 64rpx;
   font-weight: bold;
   color: #333;
-}
-
-.result-details {
-  margin-bottom: 30px;
+  display: block;
+  letter-spacing: 4rpx;
+  text-shadow: 2rpx 2rpx 4rpx rgba(0, 0, 0, 0.1);
 }
 
 .dimension-bar {
-  margin-bottom: 20px;
+  margin-bottom: 30rpx;
 }
 
 .dimension-label {
-  font-size: 14px;
+  font-size: 28rpx;
   color: #666;
-  width: 30px;
-  text-align: center;
+  margin: 0 20rpx;
 }
 
 .dimension-progress {
-  flex: 1;
-  height: 20px;
-  background-color: #f0f0f0;
-  border-radius: 10px;
+  height: 20rpx;
+  background: #f0f0f0;
+  border-radius: 10rpx;
   overflow: hidden;
-  margin: 0 10px;
   display: flex;
+  margin: 15rpx 0;
+  box-shadow: inset 0 2rpx 4rpx rgba(0, 0, 0, 0.1);
 }
 
 .dimension-value {
   height: 100%;
-  transition: width 0.3s ease;
+  transition: width 0.6s ease;
 }
 
 .report-section {
-  border-top: 1px solid #eee;
-  padding-top: 20px;
+  margin-top: 50rpx;
+  padding-top: 40rpx;
+  border-top: 2rpx solid #eee;
 }
 
 .section-title {
-  font-size: 16px;
-  font-weight: bold;
+  font-size: 36rpx;
   color: #333;
-  margin-bottom: 15px;
+  font-weight: bold;
+  margin-bottom: 30rpx;
+  display: block;
 }
 
 .report-content {
-  font-size: 14px;
+  font-size: 30rpx;
   color: #666;
-  line-height: 1.6;
+  line-height: 1.8;
+  text-align: justify;
 }
 
 .share-button {
-  margin-top: 30px;
-  background-color: #4CAF50;
-  color: #fff;
+  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+  color: white;
+  padding: 25rpx 0;
+  border-radius: 50rpx;
+  font-size: 32rpx;
   border: none;
-  border-radius: 25px;
-  padding: 12px 0;
-  font-size: 16px;
-  width: 100%;
+  width: 90%;
+  margin: 40rpx auto;
+  box-shadow: 0 4rpx 12rpx rgba(76, 175, 80, 0.3);
+  transition: all 0.3s ease;
 }
 
 .share-button:active {
-  background-color: #45a049;
+  transform: scale(0.98);
+  box-shadow: 0 2rpx 6rpx rgba(76, 175, 80, 0.2);
 }
 </style>

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -225,54 +226,114 @@ func DetermineMBTIType(scores map[string]float64) string {
 }
 
 func GenerateReport(mbtiType string) string {
+	start := time.Now()
 	apiKey := os.Getenv("DEEPSEEK_API_KEY")
 	if apiKey == "" {
-		log.Printf("Warning: DEEPSEEK_API_KEY not set, using default report template")
+		log.Printf("[MBTI报告生成] 错误: DEEPSEEK_API_KEY未设置，将使用默认模板")
 		return fmt.Sprintf("%s类型的性格特点是...", mbtiType)
 	}
 
 	// 构建提示词
-	prompt := fmt.Sprintf("请用专业的语气，详细描述MBTI中%s类型的性格特点，包括：\n1. 总体特征\n2. 人际关系\n3. 工作风格\n4. 个人发展建议", mbtiType)
-	log.Printf("开始生成%s类型的个性化报告", mbtiType)
+	prompt := fmt.Sprintf(`请以专业的心理学视角，对MBTI中的%s类型进行全面分析。请按以下结构组织内容：
+
+1. 核心特质概述
+   - 主要认知功能
+   - 思维方式特点
+   - 行为模式倾向
+
+2. 人际关系分析
+   - 沟通风格
+   - 与他人互动方式
+   - 在团队中的角色
+   - 理想的社交环境
+
+3. 职业发展洞察
+   - 最适合的工作环境
+   - 职业优势
+   - 潜在的职业挑战
+   - 理想的职业方向
+
+4. 个人成长建议
+   - 需要培养的能力
+   - 潜在的发展盲点
+   - 压力管理方式
+   - 自我提升方向
+
+请用清晰的结构和专业但易懂的语言描述上述内容。`, mbtiType)
+	log.Printf("[MBTI报告生成] 开始为%s类型生成个性化报告，使用的提示词：\n%s", mbtiType, prompt)
 
 	// 调用DeepSeek API
-	client := &http.Client{}
+	client := &http.Client{
+		Timeout: 5 * time.Minute, // 增加超时时间到5分钟
+	}
+	model := os.Getenv("DEEPSEEK_MODEL")
+	if model == "" {
+		model = "deepseek-chat-v1"
+	}
 	reqBody := map[string]interface{}{
-		"model": "deepseek-chat",
+		"model": model,
 		"messages": []map[string]string{{
 			"role":    "user",
 			"content": prompt,
 		}},
+		"temperature":       0.5,
+		"max_tokens":        2500,
+		"stream":            false,
+		"presence_penalty":  0.1,
+		"frequency_penalty": 0.1,
 	}
 
 	jsonData, err := json.Marshal(reqBody)
 	if err != nil {
-		log.Printf("Error marshaling request: %v", err)
+		log.Printf("[MBTI报告生成] 错误: 请求序列化失败 - %v", err)
 		return fmt.Sprintf("%s类型的性格特点是...", mbtiType)
 	}
 
-	req, err := http.NewRequest("POST", "https://api.deepseek.com/v1/chat/completions", bytes.NewBuffer(jsonData))
+	apiURL := os.Getenv("DEEPSEEK_API_URL")
+	if apiURL == "" {
+		apiURL = "https://api.deepseek.com/v1/chat/completions"
+	}
+
+	log.Printf("[MBTI报告生成] 准备调用DeepSeek API，请求URL: %s，请求内容:\n%s", apiURL, string(jsonData))
+
+	req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(jsonData))
 	if err != nil {
-		log.Printf("Error creating request: %v", err)
+		log.Printf("[MBTI报告生成] 错误: 创建HTTP请求失败 - %v", err)
 		return fmt.Sprintf("%s类型的性格特点是...", mbtiType)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+apiKey)
-	log.Printf("正在调用DeepSeek API生成报告...")
+	log.Printf("[MBTI报告生成] 正在调用DeepSeek API生成%s类型的报告...", mbtiType)
 
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Printf("Error calling DeepSeek API: %v", err)
+		log.Printf("[MBTI报告生成] 错误: 调用DeepSeek API失败 - %v", err)
 		return fmt.Sprintf("%s类型的性格特点是...", mbtiType)
 	}
 	defer resp.Body.Close()
 
-	log.Printf("DeepSeek API响应状态码: %d", resp.StatusCode)
+	// 读取响应体内容用于记录
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("[MBTI报告生成] 错误: 读取响应内容失败 - %v", err)
+		return fmt.Sprintf("%s类型的性格特点是...", mbtiType)
+	}
 
+	// 检查HTTP状态码
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("[MBTI报告生成] 错误: API返回非200状态码 - %d\n请求URL: %s\n请求内容: %s\n响应内容: %s",
+			resp.StatusCode, apiURL, string(jsonData), string(respBody))
+		return fmt.Sprintf("%s类型的性格特点是...", mbtiType)
+	}
+
+	log.Printf("[MBTI报告生成] DeepSeek API响应:\n状态码: %d\n响应头: %+v\n响应内容: %s\n总耗时: %.2fs",
+		resp.StatusCode, resp.Header, string(respBody), time.Since(start).Seconds())
+
+	// 重新创建一个新的Reader用于JSON解码
 	var result map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		log.Printf("Error decoding response: %v", err)
+	if err := json.NewDecoder(bytes.NewReader(respBody)).Decode(&result); err != nil {
+		log.Printf("[MBTI报告生成] 错误: 解析API响应失败 - %v", err)
 		return fmt.Sprintf("%s类型的性格特点是...", mbtiType)
 	}
 
@@ -280,12 +341,12 @@ func GenerateReport(mbtiType string) string {
 	if choices, ok := result["choices"].([]interface{}); ok && len(choices) > 0 {
 		if message, ok := choices[0].(map[string]interface{})["message"].(map[string]interface{}); ok {
 			if content, ok := message["content"].(string); ok {
-				log.Printf("成功生成%s类型的个性化报告", mbtiType)
+				log.Printf("[MBTI报告生成] 成功生成%s类型的个性化报告，总耗时: %.2fs", mbtiType, time.Since(start).Seconds())
 				return content
 			}
 		}
 	}
 
-	log.Printf("无法从API响应中提取报告内容，使用默认模板")
+	log.Printf("[MBTI报告生成] 错误: 无法从API响应中提取报告内容，将使用默认模板")
 	return fmt.Sprintf("%s类型的性格特点是...", mbtiType)
 }

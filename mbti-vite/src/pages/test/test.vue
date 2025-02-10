@@ -27,8 +27,18 @@
 
     <view class="navigation-buttons">
       <button class="nav-button" @click="previousQuestion" :disabled="currentIndex === 0">上一题</button>
-      <button class="nav-button" @click="nextQuestion" v-if="currentIndex < totalQuestions - 1">下一题</button>
-      <button class="nav-button submit" @click="submitTest" v-else>提交测试</button>
+      <button 
+        class="nav-button" 
+        @click="nextQuestion" 
+        v-if="currentIndex < totalQuestions - 1"
+        :disabled="answers[currentIndex] === undefined"
+      >下一题</button>
+      <button 
+        class="nav-button submit" 
+        @click="submitTest" 
+        v-else
+        :disabled="answers[currentIndex] === undefined"
+      >提交测试</button>
     </view>
   </view>
 </template>
@@ -82,6 +92,8 @@ export default {
               }))
             }
           })
+          // 初始化答案数组
+          this.answers = new Array(this.questions.length).fill(undefined);
         } else {
           throw new Error(`获取题目失败: ${response.statusCode}`)
         }
@@ -91,54 +103,126 @@ export default {
           title: `获取题目失败: ${error.message}`,
           icon: 'none',
           duration: 3000
-        })
+        });
       } finally {
-        this.loading = false
+        this.loading = false;
       }
     },
     selectOption(value) {
-      this.answers[this.currentIndex] = value
+      this.answers[this.currentIndex] = value;
+      // 如果不是最后一题，自动跳转到下一题
+      if (this.currentIndex < this.totalQuestions - 1) {
+        setTimeout(() => {
+          this.nextQuestion();
+        }, 300); // 添加短暂延迟以便用户看到选择效果
+      }
     },
     previousQuestion() {
       if (this.currentIndex > 0) {
-        this.currentIndex--
+        this.currentIndex--;
       }
     },
     nextQuestion() {
       if (this.currentIndex < this.totalQuestions - 1) {
-        this.currentIndex++
+        this.currentIndex++;
       }
     },
     async submitTest() {
-      if (this.answers.length < this.totalQuestions) {
+      if (this.answers.some(answer => answer === undefined)) {
         uni.showToast({
           title: '请回答所有问题',
-          icon: 'none'
-        })
-        return
+          icon: 'none',
+          duration: 2000
+        });
+        return;
       }
 
       try {
+        uni.showLoading({
+          title: 'AI正在深入分析您的答案\n请耐心等待（约10分钟）',
+          mask: true
+        });
+
+        // 计算MBTI维度得分
+        const dimensions = {
+          EI: 0, // 外向-内向
+          SN: 0, // 感觉-直觉
+          TF: 0, // 思维-情感
+          JP: 0  // 判断-知觉
+        };
+
+        // 根据答案计算每个维度的得分
+        this.answers.forEach((answer, index) => {
+          const questionType = Math.floor(index / 23); // 每个维度23个问题
+          const score = answer === 1 ? 1 : -1; // 选项1得1分，选项0得-1分
+          
+          switch(questionType) {
+            case 0:
+              dimensions.EI += score;
+              break;
+            case 1:
+              dimensions.SN += score;
+              break;
+            case 2:
+              dimensions.TF += score;
+              break;
+            case 3:
+              dimensions.JP += score;
+              break;
+          }
+        });
+
         const response = await uni.request({
           url: 'http://localhost:8080/api/submit',
           method: 'POST',
+          timeout: 600000, // 设置10分钟超时
           data: {
-            answers: this.answers
+            answers: this.answers,
+            dimensions: dimensions,
+            userInfo: {
+              testDate: new Date().toISOString(),
+              totalQuestions: this.totalQuestions,
+              completionTime: Date.now() - this._testStartTime
+            }
+          },
+          header: {
+            'Content-Type': 'application/json'
           }
-        })
+        });
 
-        if (response.statusCode === 200 && response.data.resultId) {
+        if (response.statusCode === 200 && response.data && response.data.resultId) {
+          // 使用navigateTo进行页面跳转
           uni.navigateTo({
-            url: `/pages/result/result?id=${response.data.resultId}`
-          })
+            url: `/pages/result/result?id=${response.data.resultId}`,
+            success: () => {
+              uni.hideLoading();
+            },
+            fail: (err) => {
+              console.error('页面跳转失败:', err);
+              uni.hideLoading();
+              // 如果navigateTo失败，尝试使用redirectTo
+              uni.redirectTo({
+                url: `/pages/result/result?id=${response.data.resultId}`,
+                fail: () => {
+                  uni.showToast({
+                    title: '页面跳转失败，请手动返回重试',
+                    icon: 'none',
+                    duration: 3000
+                  });
+                }
+              });
+            }
+          });
         } else {
-          throw new Error('提交失败')
+          throw new Error('提交失败，未获取到结果ID');
         }
       } catch (error) {
+        uni.hideLoading();
         uni.showToast({
-          title: '提交失败，请重试',
-          icon: 'none'
-        })
+          title: error.message || '提交失败，请重试',
+          icon: 'none',
+          duration: 2000
+        });
       }
     }
   }

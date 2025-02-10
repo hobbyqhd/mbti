@@ -11,6 +11,12 @@
 			"style": {
 				"navigationBarTitleText": "开始测试"
 			}
+		},
+		{
+			"path": "pages/result/result",
+			"style": {
+				"navigationBarTitleText": "测试结果"
+			}
 		}
 	],
 	"globalStyle": {
