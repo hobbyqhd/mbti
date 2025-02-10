@@ -231,21 +231,26 @@ export default {
 
 <style>
 .test-container {
-  padding: 20px;
+  padding: 30rpx;
+  min-height: 100vh;
+  background-color: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .progress-bar {
   width: 100%;
-  height: 10px;
-  background-color: #eee;
-  border-radius: 5px;
-  margin-bottom: 20px;
+  height: 8rpx;
+  background-color: rgba(239, 239, 244, 0.9);
+  border-radius: 8rpx;
+  margin-bottom: 30rpx;
+  overflow: hidden;
 }
 
 .progress {
   height: 100%;
-  background-color: #4CAF50;
-  border-radius: 5px;
+  background-color: #007AFF;
+  border-radius: 8rpx;
   transition: width 0.3s ease;
 }
 
@@ -260,11 +265,13 @@ export default {
 }
 
 .question-card {
-  background-color: #fff;
-  border-radius: 10px;
-  padding: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  margin-bottom: 20px;
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 20rpx;
+  padding: 30rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
+  margin-bottom: 30rpx;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
 }
 
 .question-number {
@@ -288,13 +295,18 @@ export default {
 }
 
 .option-button {
-  background-color: #f5f5f5;
+  background-color: rgba(239, 239, 244, 0.9);
   border: none;
-  padding: 15px;
-  border-radius: 5px;
+  padding: 24rpx 30rpx;
+  border-radius: 12rpx;
   text-align: left;
-  font-size: 16px;
-  transition: all 0.3s ease;
+  font-size: 28rpx;
+  transition: all 0.2s ease;
+  box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.05);
+  width: 100%;
+  min-width: 500rpx;
+  max-width: 600rpx;
+  margin: 0 auto;
 }
 
 .option-button.selected {
@@ -313,11 +325,14 @@ export default {
 }
 
 .nav-button {
-  padding: 10px 20px;
-  border-radius: 5px;
-  background-color: #2196F3;
+  padding: 20rpx 40rpx;
+  border-radius: 12rpx;
+  background-color: #007AFF;
   color: white;
   border: none;
+  font-size: 28rpx;
+  box-shadow: 0 2rpx 6rpx rgba(0, 122, 255, 0.2);
+  transition: all 0.2s ease;
 }
 
 .nav-button:disabled {

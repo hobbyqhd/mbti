@@ -36,6 +36,9 @@ export default {
   justify-content: center;
   padding: 40rpx;
   min-height: 100vh;
+  background-color: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .header {
@@ -58,11 +61,14 @@ export default {
 }
 
 .description {
-  background-color: #f5f5f5;
+  background-color: rgba(239, 239, 244, 0.9);
   padding: 30rpx;
-  border-radius: 16rpx;
+  border-radius: 20rpx;
   margin-bottom: 60rpx;
   text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
 }
 
 .description text {
@@ -72,16 +78,19 @@ export default {
 }
 
 .start-button {
-  background-color: #4CAF50;
+  background-color: #007AFF;
   color: white;
   padding: 30rpx 80rpx;
-  border-radius: 50rpx;
+  border-radius: 12rpx;
   font-size: 32rpx;
   border: none;
   margin-top: 40rpx;
+  box-shadow: 0 2px 6px rgba(0, 122, 255, 0.2);
+  transition: all 0.2s ease;
 }
 
 .start-button:active {
-  background-color: #45a049;
+  background-color: #0051D5;
+  transform: scale(0.98);
 }
 </style>
