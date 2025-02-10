@@ -4,13 +4,14 @@ import (
 	"database/sql"
 	"log"
 	"os"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
 )
 
-var db *sql.DB
+var DB *sql.DB
 
 func main() {
 	// 加载环境变量
@@ -21,11 +22,22 @@ func main() {
 	// 连接数据库
 	dbURL := os.Getenv("DATABASE_URL")
 	var err error
-	db, err = sql.Open("mysql", dbURL)
+	DB, err = sql.Open("mysql", dbURL)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer db.Close()
+	defer DB.Close()
+
+	// 设置数据库日志
+	DB.SetMaxOpenConns(10)
+	DB.SetMaxIdleConns(5)
+	DB.SetConnMaxLifetime(time.Hour)
+
+	// 添加SQL语句日志记录
+	if os.Getenv("LOG_LEVEL") == "debug" {
+		DB.SetConnMaxLifetime(time.Hour)
+		log.Println("SQL日志记录已启用")
+	}
 
 	// 设置CORS中间件
 	r := gin.Default()
@@ -41,9 +53,9 @@ func main() {
 	})
 
 	// API路由
-	r.GET("/api/questions", getQuestions)
-	r.POST("/api/submit", submitAnswers)
-	r.GET("/api/result/:id", getResult)
+	r.GET("/api/questions", GetQuestions)
+	r.POST("/api/submit", SubmitAnswers)
+	r.GET("/api/result/:id", GetResult)
 
 	// 启动服务器
 	port := os.Getenv("PORT")

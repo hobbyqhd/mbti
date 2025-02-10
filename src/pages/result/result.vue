@@ -53,7 +53,7 @@ export default {
     async fetchResult(id) {
       try {
         const response = await uni.request({
-          url: `http://localhost:8080/api/results/${id}`,
+          url: `http://localhost:8081/api/results/${id}`,
           method: 'GET'
         });
         if (response.statusCode === 200) {

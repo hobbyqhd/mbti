@@ -4,7 +4,11 @@
       <view class="progress" :style="{ width: progress + '%' }"></view>
     </view>
     
-    <view class="question-card" v-if="currentQuestion">
+    <view v-if="loading" class="loading">
+      <text>加载中...</text>
+    </view>
+
+    <view class="question-card" v-else-if="currentQuestion">
       <text class="question-number">问题 {{ currentIndex + 1 }}/{{ totalQuestions }}</text>
       <text class="question-text">{{ currentQuestion.text }}</text>
       
@@ -14,6 +18,7 @@
           v-for="(option, index) in currentQuestion.options" 
           :key="index"
           @click="selectOption(option.value)"
+          :class="{ selected: answers[currentIndex] === option.value }"
         >
           {{ option.text }}
         </button>
@@ -34,16 +39,8 @@ export default {
     return {
       currentIndex: 0,
       answers: [],
-      questions: [
-        {
-          text: '在社交场合中，你通常会：',
-          options: [
-            { text: '与很多人交谈，获得能量', value: 'E' },
-            { text: '倾向于与少数人深入交谈', value: 'I' }
-          ]
-        },
-        // 添加更多MBTI测试题目
-      ]
+      questions: [],
+      loading: true
     }
   },
   computed: {
@@ -57,7 +54,48 @@ export default {
       return (this.currentIndex / this.totalQuestions) * 100
     }
   },
+  onLoad() {
+    this.fetchQuestions()
+  },
   methods: {
+    async fetchQuestions() {
+      try {
+        const response = await uni.request({
+          url: 'http://localhost:8080/api/questions',
+          method: 'GET'
+        })
+
+        if (response.statusCode === 200 && Array.isArray(response.data)) {
+          this.questions = response.data.map(question => {
+            let options = [];
+            try {
+              options = Array.isArray(question.options) ? question.options : JSON.parse(question.options);
+            } catch (e) {
+              console.error('选项解析失败:', e);
+              options = [];
+            }
+            return {
+              text: question.question || '',
+              options: options.map((optionText, index) => ({
+                text: optionText,
+                value: index
+              }))
+            }
+          })
+        } else {
+          throw new Error(`获取题目失败: ${response.statusCode}`)
+        }
+      } catch (error) {
+        console.error('请求失败:', error);
+        uni.showToast({
+          title: `获取题目失败: ${error.message}`,
+          icon: 'none',
+          duration: 3000
+        })
+      } finally {
+        this.loading = false
+      }
+    },
     selectOption(value) {
       this.answers[this.currentIndex] = value
     },
@@ -71,16 +109,37 @@ export default {
         this.currentIndex++
       }
     },
-    submitTest() {
-      // 计算MBTI结果并跳转到结果页面
-      const result = this.calculateResult()
-      uni.navigateTo({
-        url: `/pages/result/result?type=${result}`
-      })
-    },
-    calculateResult() {
-      // 简单的结果计算逻辑
-      return 'ENFP' // 示例返回值
+    async submitTest() {
+      if (this.answers.length < this.totalQuestions) {
+        uni.showToast({
+          title: '请回答所有问题',
+          icon: 'none'
+        })
+        return
+      }
+
+      try {
+        const response = await uni.request({
+          url: 'http://localhost:8080/api/submit',
+          method: 'POST',
+          data: {
+            answers: this.answers
+          }
+        })
+
+        if (response.statusCode === 200 && response.data.resultId) {
+          uni.navigateTo({
+            url: `/pages/result/result?id=${response.data.resultId}`
+          })
+        } else {
+          throw new Error('提交失败')
+        }
+      } catch (error) {
+        uni.showToast({
+          title: '提交失败，请重试',
+          icon: 'none'
+        })
+      }
     }
   }
 }
@@ -104,6 +163,16 @@ export default {
   background-color: #4CAF50;
   border-radius: 5px;
   transition: width 0.3s ease;
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
+}
+
+.loading text {
+  font-size: 16px;
+  color: #666;
 }
 
 .question-card {
@@ -141,7 +210,12 @@ export default {
   border-radius: 5px;
   text-align: left;
   font-size: 16px;
-  transition: background-color 0.3s;
+  transition: all 0.3s ease;
+}
+
+.option-button.selected {
+  background-color: #2196F3;
+  color: white;
 }
 
 .option-button:active {
