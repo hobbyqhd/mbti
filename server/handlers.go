@@ -247,36 +247,54 @@ func GenerateReport(mbtiType string, dimensions []Dimension) string {
 	}
 
 	// 构建提示词
-	prompt := fmt.Sprintf(`请以专业的心理学视角，对MBTI中的%s类型进行全面分析。该用户在各维度上的具体倾向如下：
+	prompt := fmt.Sprintf(`请以专业的心理学视角，对MBTI中的%s类型进行全面分析，并使用HTML标签组织内容。该用户在各维度上的具体倾向如下：
 
 %s
 
-基于上述具体倾向程度，请按以下结构组织内容：
+请按以下HTML结构组织内容：
 
-1. 核心特质概述
-   - 主要认知功能
-   - 思维方式特点
-   - 行为模式倾向
+<div class="mbti-report">
+  <section class="core-traits">
+    <h2>核心特质概述</h2>
+    <ul>
+      <li><strong>主要认知功能：</strong>[内容]</li>
+      <li><strong>思维方式特点：</strong>[内容]</li>
+      <li><strong>行为模式倾向：</strong>[内容]</li>
+    </ul>
+  </section>
 
-2. 人际关系分析
-   - 沟通风格
-   - 与他人互动方式
-   - 在团队中的角色
-   - 理想的社交环境
+  <section class="relationships">
+    <h2>人际关系分析</h2>
+    <ul>
+      <li><strong>沟通风格：</strong>[内容]</li>
+      <li><strong>与他人互动方式：</strong>[内容]</li>
+      <li><strong>在团队中的角色：</strong>[内容]</li>
+      <li><strong>理想的社交环境：</strong>[内容]</li>
+    </ul>
+  </section>
 
-3. 职业发展洞察
-   - 最适合的工作环境
-   - 职业优势
-   - 潜在的职业挑战
-   - 理想的职业方向
+  <section class="career">
+    <h2>职业发展洞察</h2>
+    <ul>
+      <li><strong>最适合的工作环境：</strong>[内容]</li>
+      <li><strong>职业优势：</strong>[内容]</li>
+      <li><strong>潜在的职业挑战：</strong>[内容]</li>
+      <li><strong>理想的职业方向：</strong>[内容]</li>
+    </ul>
+  </section>
 
-4. 个人成长建议
-   - 需要培养的能力
-   - 潜在的发展盲点
-   - 压力管理方式
-   - 自我提升方向
+  <section class="growth">
+    <h2>个人成长建议</h2>
+    <ul>
+      <li><strong>需要培养的能力：</strong>[内容]</li>
+      <li><strong>潜在的发展盲点：</strong>[内容]</li>
+      <li><strong>压力管理方式：</strong>[内容]</li>
+      <li><strong>自我提升方向：</strong>[内容]</li>
+    </ul>
+  </section>
+</div>
 
-请根据用户在各维度上的具体倾向程度，用清晰的结构和专业但易懂的语言描述上述内容。特别注意根据维度分数的强弱来调整建议的针对性。`, mbtiType, strings.Join(dimensionDescriptions, "\n"))
+请根据用户在各维度上的具体倾向程度，用专业但易懂的语言填充上述HTML结构中的[内容]部分。特别注意根据维度分数的强弱来调整建议的针对性。请确保生成的HTML格式正确，可以直接在网页中显示。`, mbtiType, strings.Join(dimensionDescriptions, "\n"))
 	log.Printf("[MBTI报告生成] 开始为%s类型生成个性化报告，使用的提示词：\n%s", mbtiType, prompt)
 
 	// 调用DeepSeek API
@@ -358,6 +376,17 @@ func GenerateReport(mbtiType string, dimensions []Dimension) string {
 	if choices, ok := result["choices"].([]interface{}); ok && len(choices) > 0 {
 		if message, ok := choices[0].(map[string]interface{})["message"].(map[string]interface{}); ok {
 			if content, ok := message["content"].(string); ok {
+				// 清理内容，只保留HTML部分
+				content = strings.TrimSpace(content)
+				// 如果内容以```html开头且以```结尾，移除这些标记
+				if strings.HasPrefix(content, "```html") {
+					content = strings.TrimPrefix(content, "```html")
+				}
+				if strings.HasSuffix(content, "```") {
+					content = strings.TrimRight(content, "```")
+					//TrimSuffix(content, "```")
+				}
+				content = strings.TrimSpace(content)
 				log.Printf("[MBTI报告生成] 成功生成%s类型的个性化报告，总耗时: %.2fs", mbtiType, time.Since(start).Seconds())
 				return content
 			}

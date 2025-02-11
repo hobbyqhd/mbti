@@ -62,17 +62,8 @@ export default {
   },
   computed: {
     formattedReport() {
-      return this.result.report
-        .replace(/^### ([^\n]+)/gm, '<h3>$1</h3>')
-        .replace(/^#### ([^\n]+)/gm, '<h4>$1</h4>')
-        .replace(/^\s*[-•]\s*\*\*([^*]+)\*\*/gm, '<li><strong>$1</strong></li>')
-        .replace(/^\s*[-•]\s*([^\n]+)/gm, '<li>$1</li>')
-        .replace(/(<li>[\s\S]*?<\/li>\s*)+/g, '<ul>$&</ul>')
-        .replace(/\n\n(?!<)/g, '</p><p>')
-        .replace(/\n(?!<)/g, '<br>')
-        .split(/\n(?=<h[34]>)/g)
-        .map(section => section.trim())
-        .join('\n')
+      // 直接返回HTML内容，因为后端已经返回了格式化好的HTML
+      return this.result.report;
     },
   },
   onLoad(options) {
