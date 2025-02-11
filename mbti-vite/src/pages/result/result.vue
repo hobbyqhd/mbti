@@ -6,22 +6,22 @@
 
     <view v-else class="result-content">
       <view class="result-header">
-        <text class="result-title">您的MBTI类型是 {{ result.mbtiType }}</text>
+        <text class="result-title">您的MBTI类型是 {{ result.type }}</text>
       </view>
 
       <view class="dimensions-section">
-        <view class="dimension-item" v-for="(dimension, index) in dimensions" :key="index">
+        <view class="dimension-item" v-for="(dimension, index) in result.dimensions" :key="index">
           <view class="dimension-labels">
             <text class="dimension-label">{{dimension.left}}</text>
             <text class="dimension-label">{{dimension.right}}</text>
           </view>
           <view class="dimension-bar">
-            <view class="dimension-progress left" :style="{ width: dimension.leftScore + '%' }"></view>
-            <view class="dimension-progress right" :style="{ width: dimension.rightScore + '%' }"></view>
+            <view class="dimension-progress left" :style="{ width: dimension.leftValue + '%' }"></view>
+            <view class="dimension-progress right" :style="{ width: dimension.rightValue + '%' }"></view>
           </view>
           <view class="dimension-scores">
-            <text class="score-text">{{dimension.leftScore}}%</text>
-            <text class="score-text">{{dimension.rightScore}}%</text>
+            <text class="score-text">{{dimension.leftValue}}%</text>
+            <text class="score-text">{{dimension.rightValue}}%</text>
           </view>
         </view>
       </view>
@@ -43,14 +43,20 @@ export default {
     return {
       loading: true,
       result: {
-        mbtiType: '',
+        type: '',
+        dimensions: [
+          { left: 'E (外向)', right: 'I (内向)', leftValue: 0, rightValue: 0 },
+          { left: 'S (感觉)', right: 'N (直觉)', leftValue: 0, rightValue: 0 },
+          { left: 'T (思维)', right: 'F (情感)', leftValue: 0, rightValue: 0 },
+          { left: 'J (判断)', right: 'P (知觉)', leftValue: 0, rightValue: 0 }
+        ],
         report: ''
       },
       dimensions: [
-        { left: 'E (外向)', right: 'I (内向)', leftScore: 60, rightScore: 40 },
-        { left: 'S (感觉)', right: 'N (直觉)', leftScore: 45, rightScore: 55 },
-        { left: 'T (思维)', right: 'F (情感)', leftScore: 70, rightScore: 30 },
-        { left: 'J (判断)', right: 'P (知觉)', leftScore: 35, rightScore: 65 }
+        { left: 'E (外向)', right: 'I (内向)', leftValue: 60, rightValue: 40 },
+        { left: 'S (感觉)', right: 'N (直觉)', leftValue: 45, rightValue: 55 },
+        { left: 'T (思维)', right: 'F (情感)', leftValue: 70, rightValue: 30 },
+        { left: 'J (判断)', right: 'P (知觉)', leftValue: 35, rightValue: 65 }
       ]
     }
   },
