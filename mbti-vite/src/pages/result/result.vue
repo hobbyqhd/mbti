@@ -59,12 +59,14 @@ export default {
       return this.result.report
         .replace(/^### ([^\n]+)/gm, '<h3>$1</h3>')
         .replace(/^#### ([^\n]+)/gm, '<h4>$1</h4>')
-        .replace(/- \*\*([^*]+)\*\*/g, '<li><strong>$1</strong>')
-        .replace(/- ([^\n]+)/g, '<li>$1</li>')
-        .replace(/\n\n/g, '</p><p>')
-        .replace(/\n/g, '<br>')
-        .replace(/<li>/g, '<p><li>')
-        .replace(/<\/li>/g, '</li></p>')
+        .replace(/^\s*[-•]\s*\*\*([^*]+)\*\*/gm, '<li><strong>$1</strong></li>')
+        .replace(/^\s*[-•]\s*([^\n]+)/gm, '<li>$1</li>')
+        .replace(/(<li>[\s\S]*?<\/li>\s*)+/g, '<ul>$&</ul>')
+        .replace(/\n\n(?!<)/g, '</p><p>')
+        .replace(/\n(?!<)/g, '<br>')
+        .split(/\n(?=<h[34]>)/g)
+        .map(section => section.trim())
+        .join('\n')
     },
   },
   onLoad(options) {
@@ -202,14 +204,14 @@ export default {
 }
 
 .result-title {
-  font-size: 20px;
+  font-size: 16px;
   color: #333;
   margin-bottom: 10px;
   display: block;
 }
 
 .mbti-type {
-  font-size: 64rpx;
+  font-size: 48rpx;
   font-weight: bold;
   color: #007AFF;
   display: block;
@@ -244,20 +246,33 @@ export default {
   margin: 30rpx 0 16rpx;
 }
 
+.report-section >>> ul {
+  margin: 16rpx 0;
+  padding-left: 40rpx;
+}
+
+.report-section >>> li {
+  margin: 12rpx 0;
+  color: #333;
+  font-size: 28rpx;
+  line-height: 1.8;
+  position: relative;
+  padding-left: 8rpx;
+}
+
+.report-section >>> li::before {
+  content: "•";
+  position: absolute;
+  left: -20rpx;
+  color: #666;
+}
+
 .report-section >>> p {
   margin: 16rpx 0;
   color: #333;
   font-size: 28rpx;
   line-height: 1.8;
-}
-
-.report-section >>> li {
-  margin: 12rpx 0;
-  list-style-type: disc;
-  margin-left: 40rpx;
-  color: #333;
-  font-size: 28rpx;
-  line-height: 1.8;
+  text-align: justify;
 }
 
 .report-section >>> strong {
@@ -320,9 +335,30 @@ export default {
   font-size: 24rpx;
   color: #666;
 }
+.share-button,
+.restart-button,
+.export-button {
+  width: 100%;
+  margin-bottom: 20rpx;
+  padding: 16rpx;
+  border-radius: 12rpx;
+  font-size: 28rpx;
+  border: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 2rpx 6rpx rgba(0, 122, 255, 0.2);
+  color: white;
+}
+
+.share-button {
+  background-color: #007AFF;
+}
+
 .restart-button {
   background-color: #34C759;
-  color: white;
+}
+
+.export-button {
+  background-color: #9254de;
 }
 
 .share-button:active,
@@ -330,18 +366,5 @@ export default {
 .export-button:active {
   transform: scale(0.98);
   opacity: 0.9;
-}
-
-.export-button {
-  width: 100%;
-  margin-bottom: 20rpx;
-  padding: 24rpx;
-  border-radius: 12rpx;
-  font-size: 28rpx;
-  border: none;
-  transition: all 0.2s ease;
-  box-shadow: 0 2rpx 6rpx rgba(0, 122, 255, 0.2);
-  background-color: #9254de;
-  color: white;
 }
 </style>

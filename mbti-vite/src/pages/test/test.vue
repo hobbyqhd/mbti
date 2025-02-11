@@ -28,15 +28,9 @@
     <view class="navigation-buttons">
       <button class="nav-button" @click="previousQuestion" :disabled="currentIndex === 0">上一题</button>
       <button 
-        class="nav-button" 
-        @click="nextQuestion" 
-        v-if="currentIndex < totalQuestions - 1"
-        :disabled="answers[currentIndex] === undefined"
-      >下一题</button>
-      <button 
         class="nav-button submit" 
         @click="submitTest" 
-        v-else
+        v-if="currentIndex === totalQuestions - 1"
         :disabled="answers[currentIndex] === undefined"
       >提交测试</button>
     </view>
