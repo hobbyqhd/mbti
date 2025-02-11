@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -176,7 +177,7 @@ func SaveResult(resultID string, scores map[string]float64) error {
 	}
 
 	// 生成个性化报告
-	report := GenerateReport(mbtiType)
+	report := GenerateReport(mbtiType, dimensions)
 
 	// 将维度数据转换为JSON
 	dimensionsJSON, err := json.Marshal(dimensions)
@@ -225,7 +226,7 @@ func DetermineMBTIType(scores map[string]float64) string {
 	return mbtiType
 }
 
-func GenerateReport(mbtiType string) string {
+func GenerateReport(mbtiType string, dimensions []Dimension) string {
 	start := time.Now()
 	apiKey := os.Getenv("DEEPSEEK_API_KEY")
 	if apiKey == "" {
@@ -233,8 +234,24 @@ func GenerateReport(mbtiType string) string {
 		return fmt.Sprintf("%s类型的性格特点是...", mbtiType)
 	}
 
+	// 构建维度倾向描述
+	dimensionDescriptions := make([]string, len(dimensions))
+	for i, dim := range dimensions {
+		var tendency string
+		if dim.LeftValue > dim.RightValue {
+			tendency = fmt.Sprintf("偏向%s (%.0f%%)", dim.Left, dim.LeftValue)
+		} else {
+			tendency = fmt.Sprintf("偏向%s (%.0f%%)", dim.Right, dim.RightValue)
+		}
+		dimensionDescriptions[i] = fmt.Sprintf("%s vs %s: %s", dim.Left, dim.Right, tendency)
+	}
+
 	// 构建提示词
-	prompt := fmt.Sprintf(`请以专业的心理学视角，对MBTI中的%s类型进行全面分析。请按以下结构组织内容：
+	prompt := fmt.Sprintf(`请以专业的心理学视角，对MBTI中的%s类型进行全面分析。该用户在各维度上的具体倾向如下：
+
+%s
+
+基于上述具体倾向程度，请按以下结构组织内容：
 
 1. 核心特质概述
    - 主要认知功能
@@ -259,7 +276,7 @@ func GenerateReport(mbtiType string) string {
    - 压力管理方式
    - 自我提升方向
 
-请用清晰的结构和专业但易懂的语言描述上述内容。`, mbtiType)
+请根据用户在各维度上的具体倾向程度，用清晰的结构和专业但易懂的语言描述上述内容。特别注意根据维度分数的强弱来调整建议的针对性。`, mbtiType, strings.Join(dimensionDescriptions, "\n"))
 	log.Printf("[MBTI报告生成] 开始为%s类型生成个性化报告，使用的提示词：\n%s", mbtiType, prompt)
 
 	// 调用DeepSeek API
