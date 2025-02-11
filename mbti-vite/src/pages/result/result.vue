@@ -6,8 +6,24 @@
 
     <view v-else class="result-content">
       <view class="result-header">
-        <text class="result-title">您的MBTI类型是</text>
-        <text class="mbti-type">{{ result.mbtiType }}</text>
+        <text class="result-title">您的MBTI类型是 {{ result.mbtiType }}</text>
+      </view>
+
+      <view class="dimensions-section">
+        <view class="dimension-item" v-for="(dimension, index) in dimensions" :key="index">
+          <view class="dimension-labels">
+            <text class="dimension-label">{{dimension.left}}</text>
+            <text class="dimension-label">{{dimension.right}}</text>
+          </view>
+          <view class="dimension-bar">
+            <view class="dimension-progress left" :style="{ width: dimension.leftScore + '%' }"></view>
+            <view class="dimension-progress right" :style="{ width: dimension.rightScore + '%' }"></view>
+          </view>
+          <view class="dimension-scores">
+            <text class="score-text">{{dimension.leftScore}}%</text>
+            <text class="score-text">{{dimension.rightScore}}%</text>
+          </view>
+        </view>
       </view>
 
       <view class="report-section">
@@ -29,7 +45,13 @@ export default {
       result: {
         mbtiType: '',
         report: ''
-      }
+      },
+      dimensions: [
+        { left: 'E (外向)', right: 'I (内向)', leftScore: 60, rightScore: 40 },
+        { left: 'S (感觉)', right: 'N (直觉)', leftScore: 45, rightScore: 55 },
+        { left: 'T (思维)', right: 'F (情感)', leftScore: 70, rightScore: 30 },
+        { left: 'J (判断)', right: 'P (知觉)', leftScore: 35, rightScore: 65 }
+      ]
     }
   },
   computed: {
@@ -243,23 +265,61 @@ export default {
   font-weight: 600;
 }
 
-.share-button,
-.restart-button {
-  width: 100%;
-  margin-bottom: 20rpx;
-  padding: 24rpx;
-  border-radius: 12rpx;
+.dimensions-section {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 20rpx;
+  padding: 40rpx;
+  margin: 40rpx 0;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
+}
+
+.dimension-item {
+  margin-bottom: 30rpx;
+}
+
+.dimension-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10rpx;
+}
+
+.dimension-label {
   font-size: 28rpx;
-  border: none;
-  transition: all 0.2s ease;
-  box-shadow: 0 2rpx 6rpx rgba(0, 122, 255, 0.2);
+  color: #333;
+  font-weight: 500;
 }
 
-.share-button {
-  background-color: #007AFF;
-  color: white;
+.dimension-bar {
+  height: 20rpx;
+  background: #f0f0f0;
+  border-radius: 10rpx;
+  overflow: hidden;
+  display: flex;
 }
 
+.dimension-progress {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.dimension-progress.left {
+  background: linear-gradient(to right, #4CAF50, #81C784);
+}
+
+.dimension-progress.right {
+  background: linear-gradient(to right, #2196F3, #64B5F6);
+}
+
+.dimension-scores {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8rpx;
+}
+
+.score-text {
+  font-size: 24rpx;
+  color: #666;
+}
 .restart-button {
   background-color: #34C759;
   color: white;
