@@ -28,11 +28,17 @@
     <view class="navigation-buttons">
       <button class="nav-button" @click="previousQuestion" :disabled="currentIndex === 0">上一题</button>
       <button 
+        v-if="currentIndex === totalQuestions - 1"
         class="nav-button submit" 
         @click="submitTest" 
-        v-if="currentIndex === totalQuestions - 1"
         :disabled="answers[currentIndex] === undefined"
       >提交测试</button>
+      <button 
+        v-else
+        class="nav-button next" 
+        @click="nextQuestion" 
+        :disabled="answers[currentIndex] === undefined"
+      >下一题</button>
     </view>
   </view>
 </template>
@@ -108,7 +114,9 @@ export default {
     selectOption(value) {
       this.answers[this.currentIndex] = value
       if (this.currentIndex < this.totalQuestions - 1) {
-        setTimeout(this.nextQuestion, 300)
+        setTimeout(() => {
+          this.nextQuestion()
+        }, 500)
       }
     },
     previousQuestion() {
@@ -329,5 +337,9 @@ export default {
 
 .submit {
   background-color: #4CAF50;
+}
+
+.next {
+  background-color: #2196F3;
 }
 </style>
