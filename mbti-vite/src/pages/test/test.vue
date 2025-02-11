@@ -142,15 +142,19 @@ export default {
       }
     },
     validateAnswers() {
-      if (this.answers.some(answer => answer === undefined)) {
+      const unansweredQuestions = this.answers
+        .map((answer, index) => answer === undefined ? index + 1 : null)
+        .filter(index => index !== null);
+
+      if (unansweredQuestions.length > 0) {
         uni.showToast({
-          title: '请回答所有问题',
+          title: `请回答所有问题\n未答题号: ${unansweredQuestions.join(', ')}`,
           icon: 'none',
-          duration: 2000
-        })
-        return false
+          duration: 3000
+        });
+        return false;
       }
-      return true
+      return true;
     },
     showLoadingIndicator() {
       return uni.showLoading({
@@ -313,11 +317,8 @@ export default {
   display: flex;
   justify-content: space-between;
   margin-top: 20px;
-  position: fixed;
-  bottom: 40rpx;
-  left: 30rpx;
-  right: 30rpx;
-  z-index: 100;
+  padding: 0 30rpx;
+  margin-bottom: 40rpx;
 }
 
 .nav-button {
@@ -329,6 +330,8 @@ export default {
   font-size: 28rpx;
   box-shadow: 0 2rpx 6rpx rgba(0, 122, 255, 0.2);
   transition: all 0.2s ease;
+  min-width: 200rpx;
+  text-align: center;
 }
 
 .nav-button:disabled {

@@ -9,7 +9,7 @@
     "build:app": "uni build -p app"
   },
   "dependencies": {
-    "@dcloudio/uni-app": "^2.0.2",
+    "@dcloudio/uni-app": "^3.0.0",
     "@dcloudio/uni-h5": "^2.0.2",
     "@dcloudio/uni-ui": "^1.4.28",
     "vue": "^2.6.11",
