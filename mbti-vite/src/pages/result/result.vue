@@ -6,7 +6,8 @@
 
     <view v-else class="result-content">
       <view class="result-header">
-        <text class="result-title">您的MBTI类型是 {{ result.type }}</text>
+        <text class="result-title">您的MBTI类型是</text>
+        <text class="mbti-type">{{ result.type }}</text>
       </view>
 
       <view class="dimensions-section">
@@ -30,9 +31,11 @@
         <rich-text :nodes="formattedReport"></rich-text>
       </view>
 
-      <button class="share-button" @click="shareResult">分享结果</button>
-      <button class="export-button" @click="exportPDF">导出PDF</button>
-      <button class="restart-button" @click="restartTest">重新测试</button>
+      <view class="button-group">
+        <button class="share-button" @click="shareResult">分享结果</button>
+        <button class="export-button" @click="exportPDF">导出PDF</button>
+        <button class="restart-button" @click="restartTest">重新测试</button>
+      </view>
     </view>
   </view>
 </template>
@@ -51,18 +54,11 @@ export default {
           { left: 'J (判断)', right: 'P (知觉)', leftValue: 0, rightValue: 0 }
         ],
         report: ''
-      },
-      dimensions: [
-        { left: 'E (外向)', right: 'I (内向)', leftValue: 60, rightValue: 40 },
-        { left: 'S (感觉)', right: 'N (直觉)', leftValue: 45, rightValue: 55 },
-        { left: 'T (思维)', right: 'F (情感)', leftValue: 70, rightValue: 30 },
-        { left: 'J (判断)', right: 'P (知觉)', leftValue: 35, rightValue: 65 }
-      ]
+      }
     }
   },
   computed: {
     formattedReport() {
-      // 直接返回HTML内容，因为后端已经返回了格式化好的HTML
       return this.result.report;
     },
   },
@@ -72,7 +68,6 @@ export default {
     }
   },
   onMounted() {
-    // 动态加载CDN资源
     const loadScript = (src) => {
       return new Promise((resolve, reject) => {
         const script = document.createElement('script')
@@ -113,7 +108,6 @@ export default {
       }
     },
     shareResult() {
-      // 实现分享功能
       uni.showToast({
         title: '分享功能开发中',
         icon: 'none'
@@ -130,7 +124,6 @@ export default {
           title: '正在生成PDF...'
         });
 
-        // 获取要导出的内容区域
         const element = document.querySelector('.result-content');
         const canvas = await window.html2canvas(element, {
           scale: 2,
@@ -138,7 +131,6 @@ export default {
           logging: false
         });
 
-        // 创建PDF文档
         const { jsPDF } = window.jspdf;
         const pdf = new jsPDF({
           orientation: 'portrait',
@@ -146,19 +138,15 @@ export default {
           format: 'a4'
         });
 
-        // 获取画布尺寸和PDF页面尺寸
-        const imgWidth = 210; // A4纸的宽度（单位：mm）
-        const pageHeight = 297; // A4纸的高度（单位：mm）
+        const imgWidth = 210;
+        const pageHeight = 297;
         const imgHeight = canvas.height * imgWidth / canvas.width;
 
-        // 将画布内容添加到PDF
         const imgData = canvas.toDataURL('image/jpeg', 1.0);
         pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
 
-        // 生成PDF文件名
-        const fileName = `MBTI测试结果_${this.result.mbtiType}_${new Date().toLocaleDateString()}.pdf`;
+        const fileName = `MBTI测试结果_${this.result.type}_${new Date().toLocaleDateString()}.pdf`;
 
-        // 保存PDF
         pdf.save(fileName);
 
         uni.hideLoading();
@@ -183,7 +171,7 @@ export default {
 .result-container {
   padding: 30rpx;
   min-height: 100vh;
-  background-color: rgba(255, 255, 255, 0.8);
+  background-color: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 }
@@ -195,72 +183,32 @@ export default {
   height: 300px;
 }
 
+.result-content {
+  max-width: 800rpx;
+  margin: 0 auto;
+  padding: 40rpx;
+}
+
 .result-header {
   text-align: center;
-  margin-bottom: 30px;
+  margin-bottom: 50rpx;
+  animation: fadeIn 0.8s ease-out;
 }
 
 .result-title {
-  font-size: 16px;
-  color: #333;
-  margin-bottom: 10px;
+  font-size: 32rpx;
+  color: #666;
+  margin-bottom: 20rpx;
   display: block;
 }
 
 .mbti-type {
-  font-size: 48rpx;
+  font-size: 72rpx;
   font-weight: bold;
   color: #007AFF;
   display: block;
   letter-spacing: 4rpx;
   text-shadow: 2rpx 2rpx 4rpx rgba(0, 0, 0, 0.1);
-}
-
-.report-section {
-  padding: 20rpx;
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 16rpx;
-  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.05);
-  margin: 20rpx 0;
-}
-
-.report-section :deep(h3) {
-  font-size: 36rpx;
-  color: #333;
-  margin: 30rpx 0 20rpx;
-  font-weight: 600;
-}
-
-.report-section :deep(h4) {
-  font-size: 32rpx;
-  color: #444;
-  margin: 24rpx 0 16rpx;
-  font-weight: 500;
-}
-
-.report-section :deep(p) {
-  font-size: 28rpx;
-  color: #666;
-  line-height: 1.6;
-  margin: 16rpx 0;
-}
-
-.report-section :deep(ul) {
-  padding-left: 30rpx;
-  margin: 16rpx 0;
-}
-
-.report-section :deep(li) {
-  font-size: 28rpx;
-  color: #666;
-  line-height: 1.6;
-  margin: 12rpx 0;
-  list-style-type: disc;
-}
-
-.report-section :deep(strong) {
-  color: #333;
-  font-weight: 600;
 }
 
 .dimensions-section {
@@ -269,16 +217,17 @@ export default {
   padding: 40rpx;
   margin: 40rpx 0;
   box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
+  animation: slideUp 0.8s ease-out;
 }
 
 .dimension-item {
-  margin-bottom: 30rpx;
+  margin-bottom: 40rpx;
 }
 
 .dimension-labels {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 10rpx;
+  margin-bottom: 15rpx;
 }
 
 .dimension-label {
@@ -288,16 +237,17 @@ export default {
 }
 
 .dimension-bar {
-  height: 20rpx;
+  height: 24rpx;
   background: #f0f0f0;
-  border-radius: 10rpx;
+  border-radius: 12rpx;
   overflow: hidden;
   display: flex;
+  box-shadow: inset 0 2rpx 4rpx rgba(0, 0, 0, 0.1);
 }
 
 .dimension-progress {
   height: 100%;
-  transition: width 0.3s ease;
+  transition: width 0.6s ease;
 }
 
 .dimension-progress.left {
@@ -311,37 +261,55 @@ export default {
 .dimension-scores {
   display: flex;
   justify-content: space-between;
-  margin-top: 8rpx;
+  margin-top: 10rpx;
 }
 
 .score-text {
   font-size: 24rpx;
   color: #666;
 }
+
+.report-section {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 20rpx;
+  padding: 40rpx;
+  margin: 40rpx 0;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
+  animation: slideUp 1s ease-out;
+}
+
+.button-group {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+  margin-top: 40rpx;
+  animation: slideUp 1.2s ease-out;
+}
+
 .share-button,
 .restart-button,
 .export-button {
   width: 100%;
-  margin-bottom: 20rpx;
-  padding: 16rpx;
+  padding: 25rpx;
   border-radius: 12rpx;
-  font-size: 28rpx;
+  font-size: 32rpx;
+  font-weight: 500;
   border: none;
-  transition: all 0.2s ease;
-  box-shadow: 0 2rpx 6rpx rgba(0, 122, 255, 0.2);
+  transition: all 0.3s ease;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
   color: white;
 }
 
 .share-button {
-  background-color: #007AFF;
+  background: linear-gradient(135deg, #007AFF, #0056b3);
 }
 
 .restart-button {
-  background-color: #34C759;
+  background: linear-gradient(135deg, #34C759, #28a745);
 }
 
 .export-button {
-  background-color: #9254de;
+  background: linear-gradient(135deg, #9254de, #722ed1);
 }
 
 .share-button:active,
@@ -349,5 +317,25 @@ export default {
 .export-button:active {
   transform: scale(0.98);
   opacity: 0.9;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>

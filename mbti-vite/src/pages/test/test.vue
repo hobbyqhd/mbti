@@ -13,15 +13,25 @@
       <text class="question-text">{{ currentQuestion.text }}</text>
       
       <view class="options">
-        <button 
-          class="option-button" 
-          v-for="(option, index) in currentQuestion.options" 
-          :key="index"
-          @click="selectOption(option.value)"
-          :class="{ selected: answers[currentIndex] === option.value }"
-        >
-          {{ option.text }}
-        </button>
+        <view class="option-labels">
+          <text class="extreme-label left">非常不符合</text>
+          <text class="extreme-label right">非常符合</text>
+        </view>
+        <view class="option-circles">
+          <view 
+            class="option-circle" 
+            v-for="value in 7" 
+            :key="value"
+            @click="selectOption(value)"
+            :class="{ selected: answers[currentIndex] === value }"
+            :style="{ transform: `scale(${0.8 + value * 0.05})` }"
+          >
+            <text class="option-value">{{ value }}</text>
+          </view>
+        </view>
+        <view class="option-description">
+          <text>{{ getOptionLabel(answers[currentIndex]) }}</text>
+        </view>
       </view>
     </view>
 
@@ -93,35 +103,32 @@ export default {
     formatQuestions(data) {
       return data.map(question => ({
         text: question.question || '',
-        options: this.parseOptions(question.options)
+        dimension: question.dimension,
+        direction: question.direction
       }))
     },
-    parseOptions(options) {
-      try {
-        const parsedOptions = Array.isArray(options) ? options : JSON.parse(options)
-        return parsedOptions.map((optionText, index) => ({
-          text: optionText,
-          value: index
-        }))
-      } catch (e) {
-        console.error('选项解析失败:', e)
-        return []
+    getOptionLabel(value) {
+      switch(value) {
+        case 1: return '非常不符合'
+        case 2: return '较为不符合'
+        case 3: return '稍微不符合'
+        case 4: return '中立'
+        case 5: return '稍微符合'
+        case 6: return '较为符合'
+        case 7: return '非常符合'
+        default: return ''
       }
     },
     initializeAnswers() {
-      this.answers = new Array(this.questions.length).fill(undefined)
+      this.answers = new Array(this.totalQuestions).fill(undefined)
     },
     selectOption(value) {
       this.answers[this.currentIndex] = value
+      // 自动跳转到下一题，但不在最后一题时跳转
       if (this.currentIndex < this.totalQuestions - 1) {
         setTimeout(() => {
           this.nextQuestion()
         }, 500)
-      }
-    },
-    previousQuestion() {
-      if (this.currentIndex > 0) {
-        this.currentIndex--
       }
     },
     nextQuestion() {
@@ -129,34 +136,24 @@ export default {
         this.currentIndex++
       }
     },
+    previousQuestion() {
+      if (this.currentIndex > 0) {
+        this.currentIndex--
+      }
+    },
     async submitTest() {
-      if (!this.validateAnswers()) return
-
       try {
-        await this.showLoadingIndicator()
+        await this.showLoadingDialog()
         const dimensions = this.calculateDimensions()
         const response = await this.submitAnswers(dimensions)
         await this.handleSubmitResponse(response)
       } catch (error) {
         this.handleError('提交失败', error)
+      } finally {
+        uni.hideLoading()
       }
     },
-    validateAnswers() {
-      const unansweredQuestions = this.answers
-        .map((answer, index) => answer === undefined ? index + 1 : null)
-        .filter(index => index !== null);
-
-      if (unansweredQuestions.length > 0) {
-        uni.showToast({
-          title: `请回答所有问题\n未答题号: ${unansweredQuestions.join(', ')}`,
-          icon: 'none',
-          duration: 3000
-        });
-        return false;
-      }
-      return true;
-    },
-    showLoadingIndicator() {
+    showLoadingDialog() {
       return uni.showLoading({
         title: 'AI正在深入分析您的答案\n请耐心等待（约10分钟）',
         mask: true
@@ -164,12 +161,41 @@ export default {
     },
     calculateDimensions() {
       const dimensions = { EI: 0, SN: 0, TF: 0, JP: 0 }
+      const dimensionCounts = { EI: 0, SN: 0, TF: 0, JP: 0 }
+      
+      // 计算每个维度的得分
       this.answers.forEach((answer, index) => {
-        const questionType = Math.floor(index / 23)
-        const score = answer === 1 ? 1 : -1
-        const dimensionKeys = ['EI', 'SN', 'TF', 'JP']
-        dimensions[dimensionKeys[questionType]] += score
+        if (answer === undefined) return
+        
+        const question = this.questions[index]
+        const dimensionKey = question.dimension
+        const direction = question.direction
+        
+        let score = answer
+        if (direction < 0) {
+          score = 8 - score // 反向题目：7->1, 6->2, 5->3, 4->4, 3->5, 2->6, 1->7
+        } else {
+          score = score // 正向题目保持原始分数
+        }
+        score = ((score - 1) / 6.0) * 100 // 将1-7转换为0-100范围的百分比
+        
+        dimensions[dimensionKey] += score
+        dimensionCounts[dimensionKey]++
       })
+
+      // 计算每个维度的最终百分比
+      for (const key in dimensions) {
+        const totalQuestions = dimensionCounts[key]
+        if (totalQuestions === 0) continue
+        
+        const averageScore = dimensions[key] / totalQuestions
+        
+        dimensions[key] = {
+          leftValue: Math.round(averageScore),
+          rightValue: Math.round(100 - averageScore)
+        }
+      }
+
       return dimensions
     },
     async submitAnswers(dimensions) {
@@ -204,20 +230,15 @@ export default {
           url: `/pages/result/result?id=${resultId}`
         })
       } catch (err) {
-        console.error('页面跳转失败:', err)
-        await uni.redirectTo({
-          url: `/pages/result/result?id=${resultId}`
-        })
-      } finally {
-        uni.hideLoading()
+        this.handleError('跳转结果页面失败', err)
       }
     },
     handleError(message, error) {
-      console.error(message + ':', error)
+      console.error(message, error)
       uni.showToast({
-        title: `${message}: ${error.message}`,
+        title: message,
         icon: 'none',
-        duration: 3000
+        duration: 2000
       })
     }
   }
@@ -226,123 +247,145 @@ export default {
 
 <style>
 .test-container {
-  padding: 30rpx;
+  padding: 20px;
   min-height: 100vh;
-  background-color: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background-color: #f5f5f5;
 }
 
 .progress-bar {
-  width: 100%;
-  height: 8rpx;
-  background-color: rgba(239, 239, 244, 0.9);
-  border-radius: 8rpx;
-  margin-bottom: 30rpx;
-  overflow: hidden;
+  height: 4px;
+  background-color: #e0e0e0;
+  border-radius: 2px;
+  margin-bottom: 20px;
 }
 
 .progress {
   height: 100%;
-  background-color: #007AFF;
-  border-radius: 8rpx;
+  background-color: #4CAF50;
+  border-radius: 2px;
   transition: width 0.3s ease;
 }
 
-.loading {
-  text-align: center;
-  padding: 40px;
-}
-
-.loading text {
-  font-size: 16px;
-  color: #666;
-}
-
 .question-card {
-  background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 20rpx;
-  padding: 30rpx;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
-  margin-bottom: 30rpx;
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
+  background-color: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .question-number {
   font-size: 14px;
   color: #666;
   margin-bottom: 10px;
-  display: block;
 }
 
 .question-text {
   font-size: 18px;
   color: #333;
   margin-bottom: 20px;
-  display: block;
+  line-height: 1.5;
 }
 
 .options {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  margin: 20px 0;
+  padding: 0 20px;
 }
 
-.option-button {
-  background-color: rgba(239, 239, 244, 0.9);
-  border: none;
-  padding: 24rpx 30rpx;
-  border-radius: 12rpx;
-  text-align: left;
-  font-size: 28rpx;
-  transition: all 0.2s ease;
-  box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.05);
-  width: 100%;
-  min-width: 500rpx;
-  max-width: 600rpx;
-  margin: 0 auto;
+.option-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 15px;
 }
 
-.option-button.selected {
-  background-color: #2196F3;
+.extreme-label {
+  font-size: 14px;
+  color: #666;
+}
+
+.option-circles {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 10px;
+  background: rgba(245, 245, 245, 0.5);
+  border-radius: 12px;
+  margin: 10px 0;
+}
+
+.option-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.option-circle:hover {
+  background-color: #f0f0f0;
+  transform: scale(1.1);
+}
+
+.option-circle.selected {
+  background-color: #4CAF50;
   color: white;
 }
 
-.option-button:active {
-  background-color: #e0e0e0;
+.option-value {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.option-description {
+  text-align: center;
+  margin-top: 10px;
+  min-height: 20px;
+}
+
+.option-description text {
+  color: #666;
+  font-size: 14px;
 }
 
 .navigation-buttons {
   display: flex;
   justify-content: space-between;
-  margin-top: 20px;
-  padding: 0 30rpx;
-  margin-bottom: 40rpx;
+  margin-top: 40px;
+  position: relative;
+  padding: 0 20px;
+  margin-bottom: 30px;
+  gap: 20px;
 }
 
 .nav-button {
-  padding: 20rpx 40rpx;
-  border-radius: 12rpx;
-  background-color: #007AFF;
-  color: white;
+  flex: 1;
+  padding: 12px 20px;
+  border-radius: 4px;
   border: none;
-  font-size: 28rpx;
-  box-shadow: 0 2rpx 6rpx rgba(0, 122, 255, 0.2);
-  transition: all 0.2s ease;
-  min-width: 200rpx;
-  text-align: center;
+  background-color: #4CAF50;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  min-width: 100px;
 }
 
 .nav-button:disabled {
   background-color: #ccc;
+  cursor: not-allowed;
 }
 
-.submit {
-  background-color: #4CAF50;
-}
-
-.next {
+.nav-button.submit {
   background-color: #2196F3;
+}
+
+.loading {
+  text-align: center;
+  padding: 20px;
 }
 </style>

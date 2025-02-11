@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"net/http"
 	"os"
 	"strings"
@@ -39,7 +40,7 @@ type Dimension struct {
 }
 
 func GetQuestions(c *gin.Context) {
-	query := "SELECT id, question, options FROM questions"
+	query := "SELECT id, question, dimension, direction FROM questions"
 	start := time.Now()
 	log.Printf("开始执行SQL查询: %s", query)
 	rows, err := DB.Query(query)
@@ -53,17 +54,15 @@ func GetQuestions(c *gin.Context) {
 	var questions []Question
 	for rows.Next() {
 		var q Question
-		var optionsJSON string
-		if err := rows.Scan(&q.ID, &q.Question, &optionsJSON); err != nil {
+		var dimension string
+		var direction int
+		if err := rows.Scan(&q.ID, &q.Question, &dimension, &direction); err != nil {
 			log.Printf("解析行数据失败: %v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "解析题目失败"})
 			return
 		}
-		if err := json.Unmarshal([]byte(optionsJSON), &q.Options); err != nil {
-			log.Printf("解析选项JSON失败: %v, 数据: %s", err, optionsJSON)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "解析选项失败"})
-			return
-		}
+		// 设置7级量表选项
+		q.Options = []string{"非常不符合", "不符合", "有点不符合", "中立", "有点符合", "符合", "非常符合"}
 		questions = append(questions, q)
 	}
 
@@ -131,26 +130,75 @@ func GetResult(c *gin.Context) {
 func CalculateScores(answers []int) map[string]float64 {
 	// 实现MBTI得分计算逻辑
 	scores := make(map[string]float64)
-	// E/I, S/N, T/F, J/P 维度的题目索引（从0开始）
-	dimensions := map[string][]int{
-		"EI": {0, 7, 14, 21, 28, 35, 42, 49, 56, 63},
-		"SN": {1, 8, 15, 22, 29, 36, 43, 50, 57, 64},
-		"TF": {2, 9, 16, 23, 30, 37, 44, 51, 58, 65},
-		"JP": {3, 10, 17, 24, 31, 38, 45, 52, 59, 66},
+
+	// 从数据库获取题目信息
+	query := "SELECT dimension, direction FROM questions ORDER BY id"
+	rows, err := DB.Query(query)
+	if err != nil {
+		log.Printf("获取题目信息失败: %v", err)
+		return scores
+	}
+	defer rows.Close()
+
+	// 存储每个维度的题目信息
+	dimensionScores := make(map[string]struct {
+		total float64
+		count int
+	})
+
+	// 处理每个题目的答案
+	for i := 0; i < len(answers) && rows.Next(); i++ {
+		var dimension string
+		var direction int
+		if err := rows.Scan(&dimension, &direction); err != nil {
+			log.Printf("解析题目信息失败: %v", err)
+			continue
+		}
+
+		// 确保答案在1-7的范围内
+		answer := answers[i]
+		if answer < 1 {
+			answer = 1
+		} else if answer > 7 {
+			answer = 7
+		}
+
+		// 计算得分（考虑题目方向）
+		// 对于正向题目(direction=1)：1->0%, 7->100%
+		// 对于反向题目(direction=-1)：1->100%, 7->0%
+		var score float64
+		if direction == 1 {
+			score = float64(answer-1) * (100.0 / 6.0) // 正向题目：将1-7线性映射到0-100
+		} else {
+			score = float64(7-answer) * (100.0 / 6.0) // 反向题目：将7-1线性映射到0-100
+		}
+
+		// 确保得分在0-100范围内
+		if score < 0 {
+			score = 0
+		} else if score > 100 {
+			score = 100
+		}
+
+		// 累加分数
+		scoreInfo := dimensionScores[dimension]
+		scoreInfo.total += score
+		scoreInfo.count++
+		dimensionScores[dimension] = scoreInfo
 	}
 
-	for dim, indices := range dimensions {
-		var score float64
-		for _, idx := range indices {
-			// 添加边界检查
-			if idx >= len(answers) {
-				continue
+	// 计算每个维度的最终得分
+	for dim, info := range dimensionScores {
+		if info.count > 0 {
+			// 计算平均分并确保在0-100范围内
+			avgScore := info.total / float64(info.count)
+			if avgScore < 0 {
+				avgScore = 0
+			} else if avgScore > 100 {
+				avgScore = 100
 			}
-			if answers[idx] == 0 {
-				score++
-			}
+			scores[dim] = math.Round(avgScore)
 		}
-		scores[dim] = (score / float64(len(indices))) * 100
 	}
 
 	return scores
@@ -170,10 +218,10 @@ func SaveResult(resultID string, scores map[string]float64) error {
 
 	// 生成维度数据
 	dimensions := []Dimension{
-		{Left: "E", Right: "I", LeftValue: 100 - scores["EI"], RightValue: scores["EI"]},
-		{Left: "S", Right: "N", LeftValue: 100 - scores["SN"], RightValue: scores["SN"]},
-		{Left: "T", Right: "F", LeftValue: 100 - scores["TF"], RightValue: scores["TF"]},
-		{Left: "J", Right: "P", LeftValue: 100 - scores["JP"], RightValue: scores["JP"]},
+		{Left: "E", Right: "I", LeftValue: math.Round(100 - scores["EI"]), RightValue: math.Round(scores["EI"])},
+		{Left: "S", Right: "N", LeftValue: math.Round(100 - scores["SN"]), RightValue: math.Round(scores["SN"])},
+		{Left: "T", Right: "F", LeftValue: math.Round(100 - scores["TF"]), RightValue: math.Round(scores["TF"])},
+		{Left: "J", Right: "P", LeftValue: math.Round(100 - scores["JP"]), RightValue: math.Round(scores["JP"])},
 	}
 
 	// 生成个性化报告
@@ -203,22 +251,22 @@ func SaveResult(resultID string, scores map[string]float64) error {
 
 func DetermineMBTIType(scores map[string]float64) string {
 	var mbtiType string
-	if scores["EI"] < 50 {
+	if scores["EI"] > 50 {
 		mbtiType += "E"
 	} else {
 		mbtiType += "I"
 	}
-	if scores["SN"] < 50 {
+	if scores["SN"] > 50 {
 		mbtiType += "S"
 	} else {
 		mbtiType += "N"
 	}
-	if scores["TF"] < 50 {
+	if scores["TF"] > 50 {
 		mbtiType += "T"
 	} else {
 		mbtiType += "F"
 	}
-	if scores["JP"] < 50 {
+	if scores["JP"] > 50 {
 		mbtiType += "J"
 	} else {
 		mbtiType += "P"
@@ -290,6 +338,56 @@ func GenerateReport(mbtiType string, dimensions []Dimension) string {
       <li><strong>潜在的发展盲点：</strong>[内容]</li>
       <li><strong>压力管理方式：</strong>[内容]</li>
       <li><strong>自我提升方向：</strong>[内容]</li>
+    </ul>
+  </section>
+
+  <section class="strengths-weaknesses">
+    <h2>独特优势和劣势</h2>
+    <ul>
+      <li><strong>核心优势：</strong>[内容]</li>
+      <li><strong>潜在劣势：</strong>[内容]</li>
+      <li><strong>如何发挥优势：</strong>[内容]</li>
+      <li><strong>如何克服劣势：</strong>[内容]</li>
+    </ul>
+  </section>
+
+  <section class="love-relationships">
+    <h2>爱情关系分析</h2>
+    <ul>
+      <li><strong>恋爱中的表现：</strong>[内容]</li>
+      <li><strong>理想伴侣特质：</strong>[内容]</li>
+      <li><strong>感情相处方式：</strong>[内容]</li>
+      <li><strong>维系感情建议：</strong>[内容]</li>
+    </ul>
+  </section>
+
+  <section class="friendships">
+    <h2>友情互动特点</h2>
+    <ul>
+      <li><strong>交友方式：</strong>[内容]</li>
+      <li><strong>理想友谊类型：</strong>[内容]</li>
+      <li><strong>友情维护特点：</strong>[内容]</li>
+      <li><strong>社交圈建议：</strong>[内容]</li>
+    </ul>
+  </section>
+
+  <section class="parenting">
+    <h2>育儿方式建议</h2>
+    <ul>
+      <li><strong>教育理念：</strong>[内容]</li>
+      <li><strong>亲子互动风格：</strong>[内容]</li>
+      <li><strong>可能的教育挑战：</strong>[内容]</li>
+      <li><strong>育儿建议：</strong>[内容]</li>
+    </ul>
+  </section>
+
+  <section class="work-habits">
+    <h2>工作习惯分析</h2>
+    <ul>
+      <li><strong>工作节奏偏好：</strong>[内容]</li>
+      <li><strong>任务管理方式：</strong>[内容]</li>
+      <li><strong>工作环境需求：</strong>[内容]</li>
+      <li><strong>效率提升建议：</strong>[内容]</li>
     </ul>
   </section>
 </div>
