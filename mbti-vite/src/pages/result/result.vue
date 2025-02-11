@@ -220,63 +220,49 @@ export default {
 }
 
 .report-section {
+  padding: 20rpx;
   background: rgba(255, 255, 255, 0.9);
-  border-radius: 20rpx;
-  padding: 40rpx;
-  margin: 40rpx 0;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
-  line-height: 1.8;
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
+  border-radius: 16rpx;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.05);
+  margin: 20rpx 0;
 }
 
-.report-section >>> h3 {
+.report-section :deep(h3) {
   font-size: 36rpx;
+  color: #333;
+  margin: 30rpx 0 20rpx;
   font-weight: 600;
-  color: #2c3e50;
-  margin: 40rpx 0 20rpx;
-  padding-bottom: 16rpx;
-  border-bottom: 2rpx solid rgba(0, 0, 0, 0.1);
 }
 
-.report-section >>> h4 {
+.report-section :deep(h4) {
   font-size: 32rpx;
-  font-weight: 600;
-  color: #34495e;
-  margin: 30rpx 0 16rpx;
+  color: #444;
+  margin: 24rpx 0 16rpx;
+  font-weight: 500;
 }
 
-.report-section >>> ul {
-  margin: 16rpx 0;
-  padding-left: 40rpx;
-}
-
-.report-section >>> li {
-  margin: 12rpx 0;
-  color: #333;
+.report-section :deep(p) {
   font-size: 28rpx;
-  line-height: 1.8;
-  position: relative;
-  padding-left: 8rpx;
-}
-
-.report-section >>> li::before {
-  content: "•";
-  position: absolute;
-  left: -20rpx;
   color: #666;
-}
-
-.report-section >>> p {
+  line-height: 1.6;
   margin: 16rpx 0;
-  color: #333;
-  font-size: 28rpx;
-  line-height: 1.8;
-  text-align: justify;
 }
 
-.report-section >>> strong {
-  color: #2c3e50;
+.report-section :deep(ul) {
+  padding-left: 30rpx;
+  margin: 16rpx 0;
+}
+
+.report-section :deep(li) {
+  font-size: 28rpx;
+  color: #666;
+  line-height: 1.6;
+  margin: 12rpx 0;
+  list-style-type: disc;
+}
+
+.report-section :deep(strong) {
+  color: #333;
   font-weight: 600;
 }
 
