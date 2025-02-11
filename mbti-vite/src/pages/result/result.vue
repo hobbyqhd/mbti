@@ -35,8 +35,8 @@ export default {
   computed: {
     formattedReport() {
       return this.result.report
-        .replace(/### ([^\n]+)/g, '<h3>$1</h3>')
-        .replace(/#### ([^\n]+)/g, '<h4>$1</h4>')
+        .replace(/^### ([^\n]+)/gm, '<h3>$1</h3>')
+        .replace(/^#### ([^\n]+)/gm, '<h4>$1</h4>')
         .replace(/- \*\*([^*]+)\*\*/g, '<li><strong>$1</strong>')
         .replace(/- ([^\n]+)/g, '<li>$1</li>')
         .replace(/\n\n/g, '</p><p>')
