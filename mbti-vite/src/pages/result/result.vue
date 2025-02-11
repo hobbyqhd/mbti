@@ -17,12 +17,12 @@
             <text class="dimension-label">{{dimension.right}}</text>
           </view>
           <view class="dimension-bar">
-            <view class="dimension-progress right" :style="{ width: dimension.rightValue + '%' }"></view>
-            <view class="dimension-progress left" :style="{ width: dimension.leftValue + '%' }"></view>
+            <view class="dimension-progress left" :style="{ width: dimension.rightValue + '%' }"></view>
+            <view class="dimension-progress right" :style="{ width: dimension.leftValue + '%' }"></view>
           </view>
           <view class="dimension-scores">
-            <text class="score-text">{{dimension.leftValue}}%</text>
             <text class="score-text">{{dimension.rightValue}}%</text>
+            <text class="score-text">{{dimension.leftValue}}%</text>
           </view>
         </view>
       </view>

@@ -276,7 +276,7 @@ func DetermineMBTIType(scores map[string]float64) string {
 }
 
 func GenerateReport(mbtiType string, dimensions []Dimension) string {
-	start := time.Now()
+
 	apiKey := os.Getenv("DEEPSEEK_API_KEY")
 	if apiKey == "" {
 		log.Printf("[MBTI报告生成] 错误: DEEPSEEK_API_KEY未设置，将使用默认模板")
@@ -288,9 +288,9 @@ func GenerateReport(mbtiType string, dimensions []Dimension) string {
 	for i, dim := range dimensions {
 		var tendency string
 		if dim.LeftValue > dim.RightValue {
-			tendency = fmt.Sprintf("偏向%s (%.0f%%)", dim.Left, dim.LeftValue)
+			tendency = fmt.Sprintf("偏向%s (%.0f%%)", dim.Right, dim.LeftValue)
 		} else {
-			tendency = fmt.Sprintf("偏向%s (%.0f%%)", dim.Right, dim.RightValue)
+			tendency = fmt.Sprintf("偏向%s (%.0f%%)", dim.Left, dim.RightValue)
 		}
 		dimensionDescriptions[i] = fmt.Sprintf("%s vs %s: %s", dim.Left, dim.Right, tendency)
 	}
@@ -394,7 +394,6 @@ func GenerateReport(mbtiType string, dimensions []Dimension) string {
 </div>
 
 请根据用户在各维度上的具体倾向程度，用专业但易懂的语言填充上述HTML结构中的[内容]部分。特别注意根据维度分数的强弱来调整建议的针对性。请确保生成的HTML格式正确，可以直接在网页中显示。`, mbtiType, strings.Join(dimensionDescriptions, "\n"))
-	log.Printf("[MBTI报告生成] 开始为%s类型生成个性化报告，使用的提示词：\n%s", mbtiType, prompt)
 
 	// 调用DeepSeek API
 	client := &http.Client{
@@ -428,8 +427,6 @@ func GenerateReport(mbtiType string, dimensions []Dimension) string {
 		apiURL = "https://api.deepseek.com/v1/chat/completions"
 	}
 
-	log.Printf("[MBTI报告生成] 准备调用DeepSeek API，请求URL: %s，请求内容:\n%s", apiURL, string(jsonData))
-
 	req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		log.Printf("[MBTI报告生成] 错误: 创建HTTP请求失败 - %v", err)
@@ -438,7 +435,6 @@ func GenerateReport(mbtiType string, dimensions []Dimension) string {
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+apiKey)
-	log.Printf("[MBTI报告生成] 正在调用DeepSeek API生成%s类型的报告...", mbtiType)
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -456,13 +452,9 @@ func GenerateReport(mbtiType string, dimensions []Dimension) string {
 
 	// 检查HTTP状态码
 	if resp.StatusCode != http.StatusOK {
-		log.Printf("[MBTI报告生成] 错误: API返回非200状态码 - %d\n请求URL: %s\n请求内容: %s\n响应内容: %s",
-			resp.StatusCode, apiURL, string(jsonData), string(respBody))
+		log.Printf("[MBTI报告生成] 错误: API返回非200状态码 - %d", resp.StatusCode)
 		return fmt.Sprintf("%s类型的性格特点是...", mbtiType)
 	}
-
-	log.Printf("[MBTI报告生成] DeepSeek API响应:\n状态码: %d\n响应头: %+v\n响应内容: %s\n总耗时: %.2fs",
-		resp.StatusCode, resp.Header, string(respBody), time.Since(start).Seconds())
 
 	// 重新创建一个新的Reader用于JSON解码
 	var result map[string]interface{}
@@ -483,10 +475,8 @@ func GenerateReport(mbtiType string, dimensions []Dimension) string {
 				}
 				if strings.HasSuffix(content, "```") {
 					content = strings.TrimRight(content, "```")
-					//TrimSuffix(content, "```")
 				}
 				content = strings.TrimSpace(content)
-				log.Printf("[MBTI报告生成] 成功生成%s类型的个性化报告，总耗时: %.2fs", mbtiType, time.Since(start).Seconds())
 				return content
 			}
 		}

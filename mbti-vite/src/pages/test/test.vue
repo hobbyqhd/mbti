@@ -308,33 +308,43 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 10px;
-  background: rgba(245, 245, 245, 0.5);
+  padding: 15px 20px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e3e6e8 100%);
   border-radius: 12px;
   margin: 10px 0;
+  gap: 10px;
 }
 
 .option-circle {
-  width: 40px;
-  height: 40px;
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
-  background-color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  color: white;
 }
 
+.option-circle:nth-child(1) { background: #FFD700; }
+.option-circle:nth-child(2) { background: #FFB347; }
+.option-circle:nth-child(3) { background: #FF8C00; }
+.option-circle:nth-child(4) { background: #9370DB; }
+.option-circle:nth-child(5) { background: #8A2BE2; }
+.option-circle:nth-child(6) { background: #800080; }
+.option-circle:nth-child(7) { background: #4B0082; }
+
 .option-circle:hover {
-  background-color: #f0f0f0;
-  transform: scale(1.1);
+  transform: scale(1.15);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.15);
 }
 
 .option-circle.selected {
-  background-color: #4CAF50;
-  color: white;
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  filter: brightness(1.2);
 }
 
 .option-value {
