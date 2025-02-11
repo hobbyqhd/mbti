@@ -251,22 +251,23 @@ func SaveResult(resultID string, scores map[string]float64) error {
 
 func DetermineMBTIType(scores map[string]float64) string {
 	var mbtiType string
-	if scores["EI"] > 50 {
+	// 当分数等于50时，默认选择第二个类型
+	if scores["EI"] >= 50 {
 		mbtiType += "E"
 	} else {
 		mbtiType += "I"
 	}
-	if scores["SN"] > 50 {
+	if scores["SN"] >= 50 {
 		mbtiType += "S"
 	} else {
 		mbtiType += "N"
 	}
-	if scores["TF"] > 50 {
+	if scores["TF"] >= 50 {
 		mbtiType += "T"
 	} else {
 		mbtiType += "F"
 	}
-	if scores["JP"] > 50 {
+	if scores["JP"] >= 50 {
 		mbtiType += "J"
 	} else {
 		mbtiType += "P"
