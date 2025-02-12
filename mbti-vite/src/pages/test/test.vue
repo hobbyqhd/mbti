@@ -77,7 +77,8 @@ export default {
       return (this.currentIndex / this.totalQuestions) * 100
     }
   },
-  onLoad() {
+  onLoad(options) {
+    this.testType = options.type || 'simple'
     this.fetchQuestions()
   },
   methods: {
@@ -85,7 +86,10 @@ export default {
       try {
         const response = await uni.request({
           url: 'http://localhost:8080/api/questions',
-          method: 'GET'
+          method: 'GET',
+          data: {
+            type: this.testType
+          }
         })
 
         if (response.statusCode === 200 && Array.isArray(response.data)) {
@@ -155,7 +159,7 @@ export default {
     },
     showLoadingDialog() {
       return uni.showLoading({
-        title: 'AI正在深入分析您的答案\n请耐心等待（约10分钟）',
+        title: 'AI正在深入分析您的答案\n请耐心等待（约1分钟）',
         mask: true
       })
     },

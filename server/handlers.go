@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jmoiron/sqlx"
 )
 
 type Question struct {
@@ -40,10 +41,36 @@ type Dimension struct {
 }
 
 func GetQuestions(c *gin.Context) {
-	query := "SELECT id, question, dimension, direction FROM questions"
+	testType := c.Query("type")
+	if testType == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "测试类型不能为空"})
+		return
+	}
+
+	var types []string
+	switch testType {
+	case "simple":
+		types = []string{"simple"}
+	case "detailed":
+		types = []string{"simple", "detailed"}
+	case "full":
+		types = []string{"simple", "detailed", "full"}
+	default:
+		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的测试类型"})
+		return
+	}
+
+	query := "SELECT id, question, dimension, direction FROM questions WHERE type IN (?)"
 	start := time.Now()
-	log.Printf("开始执行SQL查询: %s", query)
-	rows, err := DB.Query(query)
+	log.Printf("开始执行SQL查询: %s, 参数: %s", query, testType)
+	query, args, err := sqlx.In(query, types)
+	if err != nil {
+		log.Printf("构建IN查询失败: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取题目失败"})
+		return
+	}
+
+	rows, err := DB.Query(query, args...)
 	if err != nil {
 		log.Printf("SQL查询失败: %v, 耗时: %v", err, time.Since(start))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取题目失败"})
@@ -81,8 +108,14 @@ func SubmitAnswers(c *gin.Context) {
 		return
 	}
 
+	// 获取测试类型
+	testType := c.Query("type")
+	if testType == "" {
+		testType = "simple" // 默认使用simple类型
+	}
+
 	// 计算MBTI维度得分
-	scores := CalculateScores(answer.Answers)
+	scores := CalculateScores(answer.Answers, testType)
 	// 生成结果ID
 	resultID := GenerateResultID()
 
@@ -127,13 +160,33 @@ func GetResult(c *gin.Context) {
 	c.JSON(http.StatusOK, result)
 }
 
-func CalculateScores(answers []int) map[string]float64 {
+func CalculateScores(answers []int, testType string) map[string]float64 {
 	// 实现MBTI得分计算逻辑
 	scores := make(map[string]float64)
 
-	// 从数据库获取题目信息
-	query := "SELECT dimension, direction FROM questions ORDER BY id"
-	rows, err := DB.Query(query)
+	// 根据测试类型确定题目范围
+	var types []string
+	switch testType {
+	case "simple":
+		types = []string{"simple"}
+	case "detailed":
+		types = []string{"simple", "detailed"}
+	case "full":
+		types = []string{"simple", "detailed", "full"}
+	default:
+		log.Printf("无效的测试类型: %s", testType)
+		return scores
+	}
+
+	// 构建SQL查询
+	query := "SELECT dimension, direction FROM questions WHERE type IN (?) ORDER BY id"
+	query, args, err := sqlx.In(query, types)
+	if err != nil {
+		log.Printf("构建IN查询失败: %v", err)
+		return scores
+	}
+
+	rows, err := DB.Query(query, args...)
 	if err != nil {
 		log.Printf("获取题目信息失败: %v", err)
 		return scores
