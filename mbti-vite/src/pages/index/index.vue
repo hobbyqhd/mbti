@@ -14,14 +14,14 @@
         <text class="card-title">简单版</text>
         <text class="card-subtitle">40题 · 约10分钟</text>
         <text class="card-description">适合快速了解自己的性格类型</text>
-        <button class="start-button">开始测试</button>
+        <button class="start-button primary">开始测试</button>
       </view>
 
       <view class="test-card" @click="startTest('detailed')">
         <text class="card-title">详细版</text>
         <text class="card-subtitle">80题 · 约20分钟</text>
         <text class="card-description">提供更准确的性格分析结果</text>
-        <button class="start-button primary">开始测试</button>
+        <button class="start-button">开始测试</button>
       </view>
 
       <view class="test-card" @click="startTest('full')">
