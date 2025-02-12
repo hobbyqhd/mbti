@@ -401,7 +401,7 @@ func GenerateReport(mbtiType string, dimensions []Dimension) string {
 	}
 	model := os.Getenv("DEEPSEEK_MODEL")
 	if model == "" {
-		model = "deepseek-chat-v1"
+		model = "deepseek-chat-1.0"
 	}
 	reqBody := map[string]interface{}{
 		"model": model,

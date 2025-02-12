@@ -35,7 +35,6 @@ go.work
 *.sw?
 
 # Project specific
-.env
 .env.*
 !.env.example
 
