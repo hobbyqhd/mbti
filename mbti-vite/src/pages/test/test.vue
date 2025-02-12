@@ -30,7 +30,7 @@
           </view>
         </view>
         <view class="option-description">
-          <text>{{ getOptionLabel(answers[currentIndex]) }}</text>
+          <text v-if="answers[currentIndex]">您的选择是：{{ getOptionLabel(answers[currentIndex]) }}</text>
         </view>
       </view>
     </view>
